@@ -42,7 +42,7 @@ func ValidateMovie(v *validator.Validator, movie *Movie) {
 type Movier interface {
 	Insert(*Movie) error
 	Get(int64) (*Movie, error)
-	GetAll(string, []string, Filters) ([]*Movie, error)
+	GetAll(string, []string, Filters) ([]*Movie, Metadata, error)
 	Update(*Movie) error
 	Delete(int64) error
 }
@@ -98,9 +98,9 @@ func (m MovieModel) Get(id int64) (*Movie, error) {
 	return &movie, nil
 }
 
-func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
+func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, Metadata, error) {
 	query := fmt.Sprintf(`
-		SELECT id, created_at, title, year, runtime, genres, version
+		SELECT COUNT(*) OVER(), id, created_at, title, year, runtime, genres, version
 		FROM movies
 		WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '')
 		AND (genres @> $2 OR $2 = '{}')
@@ -113,17 +113,19 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*M
 
 	rows, err := m.DB.QueryContext(ctx, query, title, pq.Array(genres), filters.limit(), filters.offset())
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
 	defer rows.Close()
 
 	movies := []*Movie{}
+	var totalRecords int
 
 	for rows.Next() {
 		var movie Movie
 
 		err := rows.Scan(
+			&totalRecords,
 			&movie.ID,
 			&movie.CreatedAt,
 			&movie.Title,
@@ -133,17 +135,19 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*M
 			&movie.Version,
 		)
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 
 		movies = append(movies, &movie)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	return movies, nil
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return movies, metadata, nil
 }
 
 func (m MovieModel) Update(movie *Movie) error {
@@ -213,8 +217,8 @@ func (m MockMovieModel) Get(id int64) (*Movie, error) {
 	return nil, nil
 }
 
-func (m MockMovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
-	return nil, nil
+func (m MockMovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, Metadata, error) {
+	return nil, Metadata{}, nil
 }
 
 func (m MockMovieModel) Update(movie *Movie) error {
