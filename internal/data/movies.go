@@ -11,6 +11,14 @@ import (
 	"github.com/lib/pq"
 )
 
+type Movier interface {
+	Insert(*Movie) error
+	Get(int64) (*Movie, error)
+	GetAll(string, []string, Filters) ([]*Movie, Metadata, error)
+	Update(*Movie) error
+	Delete(int64) error
+}
+
 type Movie struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"-"`
@@ -37,14 +45,6 @@ func ValidateMovie(v *validator.Validator, movie *Movie) {
 	v.Check(len(movie.Genres) <= 5, "genres", "must not contain more than 5 genres")
 	v.Check(validator.Unique(movie.Genres), "genres", "must not contain duplicate values")
 
-}
-
-type Movier interface {
-	Insert(*Movie) error
-	Get(int64) (*Movie, error)
-	GetAll(string, []string, Filters) ([]*Movie, Metadata, error)
-	Update(*Movie) error
-	Delete(int64) error
 }
 
 type MovieModel struct {
