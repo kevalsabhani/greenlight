@@ -88,6 +88,24 @@ func main() {
 	logger.PrintInfo("database connection pool established", nil)
 	fmt.Println("database connection pool stablished")
 
+	// Publish the current version in metrics
+	expvar.NewString("version").Set(version)
+
+	// Publish the number of active goroutines in metrics
+	expvar.Publish("goroutines", expvar.Func(func() interface{} {
+		return runtime.NumGoroutine()
+	}))
+
+	// Publish the database connection pool statistics in metrics
+	expvar.Publish("database", expvar.Func(func() interface{} {
+		return db.Stats()
+	}))
+
+	// Publish the current unix timestamp in metrics
+	expvar.Publish("timestamp", expvar.Func(func() interface{} {
+		return time.Now().Unix()
+	}))
+
 	app := &application{
 		config: cfg,
 		logger: logger,
