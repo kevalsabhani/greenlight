@@ -11,9 +11,11 @@ import (
 	"github.com/kevalsabhani/greenlight/internal/validator"
 )
 
+// Define a set of scope constants for token scopes.
 const (
-	ScopeActivation   = "activation"
-	ScopeAuthencation = "authentication"
+	ScopeActivation    = "activation"
+	ScopeAuthencation  = "authentication"
+	ScopePasswordReset = "password-reset"
 )
 
 type Token struct {
