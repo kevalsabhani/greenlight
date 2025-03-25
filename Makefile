@@ -61,7 +61,10 @@ build/api:
 # ==================================================================================== #
 
 ## audit: tidy dependencies and format, vet and test all code
-audit: vendor
+audit:
+	@echo 'Tidying and verifying module dependencies...'
+	go mod tidy
+	go mod verify
 	@echo 'Formatting code...'
 	go fmt ./...
 	@echo 'Vetting code...'
@@ -70,11 +73,4 @@ audit: vendor
 	@echo 'Running tests...'
 	go test -vet=off -race ./...
 
-## vendor: tidy and vendor dependencies
-.PHONY: vendor
-vendor:
-	@echo 'Tidying and verifying module dependencies...'
-	go mod tidy
-	go mod verify
-	@echo 'Vendoring dependencies...'
-	go mod vendor
+

@@ -1,0 +1,1 @@
+CREATE DATBASE IF NOT EXISTS greenlight;

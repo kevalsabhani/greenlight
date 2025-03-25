@@ -1,13 +1,37 @@
 services:
-  db:
+  greenlight-db:
+    container_name: greenlight-db
     image: postgres
-    restart: always
+    restart: unless-stopped
     ports:
       - 5432:5432
     environment:
       POSTGRES_PASSWORD: pass
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d
+    networks:
+      - greenlight-network
+
+  greenlight-backend:
+    container_name: greenlight-backend
+    depends_on:
+      - greenlight-db
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    environment:
+      GREENLIGHT_DB_DSN: "postgres://postgres:pass@greenlight-db:5432/greenlight?sslmode=disable"
+      PORT: 8080
+    networks:
+      - greenlight-network
 
 volumes:
   pgdata:
+
+networks:
+  greenlight-network:
+    driver: bridge
